@@ -20,12 +20,12 @@ pub struct Layout {
     pub non_us: Option<u16>,
     pub dead_keys_mask: Option<u16>,
     pub keycode_mask: u16,
-    pub keycodes: Box<[u16]>,
+    pub keycodes: [u16; 96],
     pub deadkeys: DeadKeys,
 }
 
 impl DeadKeys {
-    pub fn new(
+    pub const fn new(
         acute_accent_bits: Option<u16>,
         deadkey_accute_accent: Option<u16>,
         cedilla_bits: Option<u16>,
@@ -57,17 +57,16 @@ impl DeadKeys {
 }
 
 impl Layout {
-    pub fn new(
+    pub const fn new(
         shift_mask: u16,
         alt_mask: Option<u16>,
         ctrl_mask: Option<u16>,
         non_us: Option<u16>,
         dead_keys_mask: Option<u16>,
         keycode_mask: u16,
-        keycodes: Vec<u16>,
+        keycodes: [u16; 96],
         deadkeys: DeadKeys,
     ) -> Layout {
-        let keycodes = keycodes.into_boxed_slice();
         Layout {
             shift_mask,
             alt_mask,

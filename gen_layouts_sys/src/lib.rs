@@ -1,3 +1,5 @@
+#![no_std]
+
 #[cfg(not(feature = "generate"))]
 mod generated;
 mod types;
