@@ -1,7 +1,7 @@
 use structopt::StructOpt;
 
 use std::fs;
-use std::io::{Error, ErrorKind, Result};
+use std::io::{Error, Result};
 use std::thread;
 use std::time::Duration;
 
@@ -73,7 +73,7 @@ fn main() -> Result<()> {
         }
 
         let hid_bytes = keyboard_layouts::string_to_hid_packets(&layout, &string)
-            .map_err(|e| Error::new(ErrorKind::Other, format!("{}", e)))?;
+            .map_err(|e| Error::other(format!("{}", e)))?;
 
         thread::sleep(Duration::from_secs(delay));
 
