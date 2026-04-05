@@ -78,6 +78,8 @@ pub fn string_to_keys_and_modifiers<const STRING_CAPACITY: usize>(
         .iter()
         .find(|(n, _)| *n == layout_key)
         .ok_or(Error::InvalidLayoutKey)?;
+
+    buffer.clear();
     let keys_and_modifiers = buffer;
 
     for c in string.chars() {
@@ -132,6 +134,8 @@ pub fn string_to_keys_and_modifiers<const STRING_CAPACITY: usize>(
 
 /// Create the sequence of HID packets required to type the given string. Impersonating a keyboard
 /// with the specified layout. These packets can be written directly to a HID device file.
+///
+/// The buffer must be at least as long as the string
 pub fn string_to_hid_packets<const STRING_CAPACITY: usize>(
     layout_key: &str,
     string: &str,
