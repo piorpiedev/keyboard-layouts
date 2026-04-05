@@ -30,7 +30,11 @@ fn main() -> Result<()> {
     if let Some(string) = string {
         println!("Layout: {}", layout);
         println!("Keys and Modifiers to type: {}", &string);
-        for key_mod in keyboard_layouts::string_to_keys_and_modifiers(&layout, &string).unwrap() {
+        let mut keys = heapless::Vec::new();
+        keyboard_layouts::string_to_keys_and_modifiers::<4095>(&layout, &string, &mut keys)
+            .unwrap();
+
+        for key_mod in keys {
             println!(
                 "Key: {:#02X} Modifier: {:#02X}",
                 key_mod.key, key_mod.modifier
