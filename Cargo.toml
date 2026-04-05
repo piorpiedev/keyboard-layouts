@@ -1,8 +1,11 @@
 [package]
 name = "keyboard-layouts"
 version = "0.3.0"
-authors = ["chris ricketts <chris.ricketts@steribar.com>"]
-edition = "2018"
+authors = [
+    "chris ricketts <chris.ricketts@steribar.com>",
+    "Piorpie <contact@piorpie.com>",
+]
+edition = "2024"
 description = "Keyboard layout keymaps with an API to generate HID packets"
 readme = "README.md"
 keywords = ["keyboard", "layouts", "hid"]
