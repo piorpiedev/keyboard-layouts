@@ -1,6 +1,6 @@
 [package]
 name = "keyboard-layouts"
-version = "0.3.0"
+version = "0.4.0"
 authors = [
     "chris ricketts <chris.ricketts@steribar.com>",
     "Piorpie <contact@piorpie.com>",
