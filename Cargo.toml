@@ -17,22 +17,11 @@ repository = "https://github.com/Chris-Ricketts/keyboard-layouts"
 name = "keyboard_layouts"
 path = "src/lib.rs"
 
-[[bin]]
-name = "kbsim"
-path = "src/bin/kbsim.rs"
-
 [dependencies]
 gen_layouts_sys = { path = "gen_layouts_sys", version = "0.3.0", features = [] }
 bytes = "1.11.1"
-structopt = "0.3.26"
 log = "0.4.29"
 heapless = "0.9.2"
 
 [dev-dependencies]
-# tokio-linux-uhid = "0.3.2"
-# futures = "0.3.32"
-# tokio-core = "0.1.18"
-# bytes = "1.11.1"
-# pretty_assertions = "1.4.1"
-# maplit = "1.0.2"
-# lazy_static = "1.5.0"
+structopt = "0.3.26"
