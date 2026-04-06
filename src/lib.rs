@@ -8,6 +8,8 @@ use bytes::{BufMut, Bytes, BytesMut};
 use gen_layouts_sys::*;
 use heapless::Vec;
 
+pub use gen_layouts_sys::Layout;
+
 const UNICODE_ENTER: u16 = 10; // \n
 const UNICODE_TAB: u16 = 9; // \t
 // https://stackoverflow.com/questions/23320417/what-is-this-character-separator
