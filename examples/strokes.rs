@@ -1,4 +1,4 @@
-use {std::io::Result, structopt::StructOpt};
+use {keyboard_layouts::get_layout, std::io::Result, structopt::StructOpt};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -29,10 +29,10 @@ fn main() -> Result<()> {
 
     if let Some(string) = string {
         println!("Layout: {}", layout);
+        let layout = get_layout(&layout).unwrap();
         println!("Keys and Modifiers to type: {}", &string);
         let mut keys = heapless::Vec::new();
-        keyboard_layouts::string_to_keys_and_modifiers::<4095>(&layout, &string, &mut keys)
-            .unwrap();
+        keyboard_layouts::string_to_keys_and_modifiers::<4095>(layout, &string, &mut keys).unwrap();
 
         for key_mod in keys {
             println!(

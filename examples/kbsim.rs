@@ -66,6 +66,8 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    let layout = keyboard_layouts::get_layout(&layout).unwrap();
+
     if let Some(mut string) = string {
         let hid_file = hid_file.unwrap_or_else(|| "/dev/hidg0".to_string());
 
@@ -79,7 +81,7 @@ fn main() -> Result<()> {
         assert!(string.len() < MAX_STRING_LEN);
 
         let mut buffer: heapless::Vec<KeyMod, MAX_STRING_LEN> = heapless::Vec::new();
-        let hid_bytes = keyboard_layouts::string_to_hid_packets(&layout, &string, &mut buffer)
+        let hid_bytes = keyboard_layouts::string_to_hid_packets(layout, &string, &mut buffer)
             .map_err(|e| Error::other(format!("{}", e)))?;
 
         thread::sleep(Duration::from_secs(delay));

@@ -65,20 +65,25 @@ pub fn available_layouts() -> Vec<&'static str, LAYOUTS_NUM> {
     LAYOUT_MAP.iter().map(|(n, _)| n).cloned().collect()
 }
 
-/// Get a list of the key and modifier pairs required to type the given string on a keyboard with
-/// the specified layout.
-///
-/// The buffer must be at least as long as the string
-pub fn string_to_keys_and_modifiers<const STRING_CAPACITY: usize>(
-    layout_key: &str,
-    string: &str,
-    buffer: &mut Vec<KeyMod, STRING_CAPACITY>,
-) -> Result<usize, Error> {
+/// Get keyboard layout reference
+pub fn get_layout(layout_key: &str) -> Result<&Layout, Error> {
     let (_, layout) = LAYOUT_MAP
         .iter()
         .find(|(n, _)| *n == layout_key)
         .ok_or(Error::InvalidLayoutKey)?;
 
+    Ok(layout)
+}
+
+/// Get a list of the key and modifier pairs required to type the given string on a keyboard with
+/// the specified layout.
+///
+/// The buffer must be at least as long as the string
+pub fn string_to_keys_and_modifiers<const STRING_CAPACITY: usize>(
+    layout: &Layout,
+    string: &str,
+    buffer: &mut Vec<KeyMod, STRING_CAPACITY>,
+) -> Result<usize, Error> {
     buffer.clear();
     let keys_and_modifiers = buffer;
 
@@ -137,11 +142,11 @@ pub fn string_to_keys_and_modifiers<const STRING_CAPACITY: usize>(
 ///
 /// The buffer must be at least as long as the string
 pub fn string_to_hid_packets<const STRING_CAPACITY: usize>(
-    layout_key: &str,
+    layout: &Layout,
     string: &str,
     buffer: &mut Vec<KeyMod, STRING_CAPACITY>,
 ) -> Result<Bytes, Error> {
-    string_to_keys_and_modifiers(layout_key, string, buffer)?;
+    string_to_keys_and_modifiers(layout, string, buffer)?;
     let keys_and_modifiers = buffer;
 
     debug!("Keys and Modifiers for {}:{:?}", string, keys_and_modifiers);
