@@ -151,7 +151,7 @@ pub fn string_to_hid_packets<const STRING_CAPACITY: usize>(
     string_to_keys_and_modifiers(layout, string, buffer)?;
     let keys_and_modifiers = buffer;
 
-    debug!("Keys and Modifiers for {}:{:?}", string, keys_and_modifiers);
+    trace!("Keys and Modifiers for {}:{:?}", string, keys_and_modifiers);
     let mut packet_bytes = BytesMut::with_capacity(HID_PACKET_LEN * keys_and_modifiers.len() * 2);
 
     for KeyMod {
