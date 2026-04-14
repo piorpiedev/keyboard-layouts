@@ -1,10 +1,8 @@
 #![no_std]
-#[macro_use]
 extern crate log;
 
 use core::fmt;
 
-use bytes::{BufMut, Bytes, BytesMut};
 use gen_layouts_sys::*;
 use heapless::Vec;
 
@@ -19,19 +17,16 @@ const UNICODE_LAST_ASCII: u16 = 0x7F; // BACKSPACE
 const KEY_MASK: u16 = 0x3F; // Remove SHIFT/ALT/CTRL from keycode
 /// The number of bytes in a keyboard HID packet
 pub const HID_PACKET_LEN: usize = 8;
-const HID_PACKET_SUFFIX: [u8; 5] = [0; 5];
 const RELEASE_KEYS_HID_PACKET: [u8; 8] = [0; 8];
 
 const MAX_MODIFIER_KEYS: usize = 8;
 
 #[derive(Debug)]
 pub enum Error {
-    BufferTooSmall,
     InvalidLayoutKey,
-    InvalidCharacter(char),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum Release {
     All = 0,
@@ -39,7 +34,7 @@ pub enum Release {
     None = 2,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct KeyMod {
     pub key: u8,
     pub modifier: u8,
@@ -56,8 +51,6 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::InvalidLayoutKey => write!(f, "Invalid keyboard layout"),
-            Error::InvalidCharacter(c) => write!(f, "Invalid character: '{}' or [{:?}]", c, c),
-            Error::BufferTooSmall => write!(f, "Buffer too small"),
         }
     }
 }
@@ -79,104 +72,88 @@ pub fn get_layout(layout_key: &str) -> Result<&Layout, Error> {
 
 /// Get a list of the key and modifier pairs required to type the given string on a keyboard with
 /// the specified layout.
-///
-/// The buffer must be at least as long as the string
-pub fn string_to_keys_and_modifiers<const STRING_CAPACITY: usize>(
-    layout: &Layout,
-    string: &str,
-    buffer: &mut Vec<KeyMod, STRING_CAPACITY>,
-) -> Result<usize, Error> {
-    buffer.clear();
-    let keys_and_modifiers = buffer;
+pub fn string_to_keys_and_modifiers<'a>(
+    layout: &'a Layout,
+    string: &'a str,
+) -> impl Iterator<Item = KeyMod> + 'a {
+    string.chars().flat_map(move |c| {
+        let mut char_reports: Vec<KeyMod, { MAX_MODIFIER_KEYS + 1 }> = Vec::new(); // Adding one for the release packet
 
-    for c in string.chars() {
         match keycode_for_unicode(layout, c as u16) {
             Keycode::ModifierKeySequence(modifier, sequence) => {
                 for keycode in sequence {
-                    keys_and_modifiers
+                    char_reports
                         .push(KeyMod {
                             key: keycode as u8,
                             modifier: modifier as u8,
                             release: Release::Keys,
                         })
-                        .map_err(|_| Error::BufferTooSmall)?;
+                        .expect("sequence is intinialized with capacity MAX_MODIFIER_KEYS +1");
                 }
                 // Manually add release after sequence is finished
-                keys_and_modifiers
+                char_reports
                     .push(KeyMod {
                         key: 0,
                         modifier: 0,
                         release: Release::None,
                     })
-                    .map_err(|_| Error::BufferTooSmall)?;
+                    .expect("we left +1 in capacity so we must be able to add an extra report");
             }
             Keycode::RegularKey(keycode) => {
                 if let Some(dead_keycode) = deadkey_for_keycode(layout, keycode) {
                     let key = key_for_keycode(layout, dead_keycode);
                     let modifier = modifier_for_keycode(layout, dead_keycode);
-                    keys_and_modifiers
+                    char_reports
                         .push(KeyMod {
                             key,
                             modifier,
                             release: Release::All,
                         })
-                        .map_err(|_| Error::BufferTooSmall)?;
+                        .expect("MAX_MODIFIER_KEYS must be a positive number, greater than 1");
                 }
                 let key = key_for_keycode(layout, keycode);
                 let modifier = modifier_for_keycode(layout, keycode);
-                keys_and_modifiers
+                char_reports
                     .push(KeyMod {
                         key,
                         modifier,
                         release: Release::All,
                     })
-                    .map_err(|_| Error::BufferTooSmall)?;
+                    .expect("MAX_MODIFIER_KEYS must be a positive number, greater than 1");
             }
-            _ => return Err(Error::InvalidCharacter(c)),
+            _ => {}
         }
-    }
 
-    Ok(keys_and_modifiers.len())
+        char_reports
+    })
 }
 
 /// Create the sequence of HID packets required to type the given string. Impersonating a keyboard
 /// with the specified layout. These packets can be written directly to a HID device file.
-///
-/// The buffer must be at least as long as the string
-pub fn string_to_hid_packets<const STRING_CAPACITY: usize>(
-    layout: &Layout,
-    string: &str,
-    buffer: &mut Vec<KeyMod, STRING_CAPACITY>,
-) -> Result<Bytes, Error> {
-    string_to_keys_and_modifiers(layout, string, buffer)?;
-    let keys_and_modifiers = buffer;
-
-    trace!("Keys and Modifiers for {}:{:?}", string, keys_and_modifiers);
-    let mut packet_bytes = BytesMut::with_capacity(HID_PACKET_LEN * keys_and_modifiers.len() * 2);
-
-    for KeyMod {
-        key,
-        modifier,
-        release,
-    } in keys_and_modifiers.iter()
-    {
-        packet_bytes.put_u8(*modifier);
-        packet_bytes.put_u8(0);
-        packet_bytes.put_u8(*key);
-        packet_bytes.put_slice(&HID_PACKET_SUFFIX);
-        match release {
-            Release::All => packet_bytes.put_slice(&RELEASE_KEYS_HID_PACKET),
+pub fn string_to_hid_packets<'a>(
+    layout: &'a Layout,
+    string: &'a str,
+) -> impl Iterator<Item = [u8; 8]> {
+    string_to_keys_and_modifiers(layout, string).flat_map(move |m| {
+        let mut packets: Vec<[u8; 8], 2> = Vec::new();
+        packets
+            .push([m.modifier, 0, m.key, 0, 0, 0, 0, 0])
+            .expect("1 < 2, so there is space");
+        match m.release {
+            Release::All => {
+                packets
+                    .push(RELEASE_KEYS_HID_PACKET)
+                    .expect("2 <= 2, so there is space");
+            }
             Release::Keys => {
-                packet_bytes.put_u8(*modifier);
-                packet_bytes.put_u8(0);
-                packet_bytes.put_u8(0);
-                packet_bytes.put_slice(&HID_PACKET_SUFFIX);
+                packets
+                    .push([m.modifier, 0, 0, 0, 0, 0, 0, 0])
+                    .expect("2 <= 2, so there is space");
             }
             Release::None => {}
         }
-    }
-
-    Ok(packet_bytes.freeze())
+        packets
+    })
 }
 
 fn keycode_for_unicode(layout: &Layout, unicode: u16) -> Keycode {

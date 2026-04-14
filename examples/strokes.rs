@@ -31,8 +31,7 @@ fn main() -> Result<()> {
         println!("Layout: {}", layout);
         let layout = get_layout(&layout).unwrap();
         println!("Keys and Modifiers to type: {}", &string);
-        let mut keys = heapless::Vec::new();
-        keyboard_layouts::string_to_keys_and_modifiers::<4095>(layout, &string, &mut keys).unwrap();
+        let keys = keyboard_layouts::string_to_keys_and_modifiers(layout, &string);
 
         for key_mod in keys {
             println!(

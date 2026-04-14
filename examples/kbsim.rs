@@ -75,18 +75,10 @@ fn main() -> Result<()> {
             string.push('\n');
         }
 
-        // Arbitrary value based on: https://linuxvox.com/blog/linux-terminal-input-reading-user-input-from-terminal-truncating-lines-at-4095-character-limit/
-        // Here just for demonstration purposes
-        const MAX_STRING_LEN: usize = 4095;
-        assert!(string.len() < MAX_STRING_LEN);
-
-        let mut buffer: heapless::Vec<KeyMod, MAX_STRING_LEN> = heapless::Vec::new();
-        let hid_bytes = keyboard_layouts::string_to_hid_packets(layout, &string, &mut buffer)
-            .map_err(|e| Error::other(format!("{}", e)))?;
-
+        let hid_bytes = keyboard_layouts::string_to_hid_packets(layout, &string);
         thread::sleep(Duration::from_secs(delay));
 
-        for packet in hid_bytes.chunks(keyboard_layouts::HID_PACKET_LEN) {
+        for packet in hid_bytes {
             fs::write(&hid_file, packet)?;
             thread::sleep(Duration::from_millis(cooldown));
         }

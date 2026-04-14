@@ -19,7 +19,6 @@ path = "src/lib.rs"
 
 [dependencies]
 gen_layouts_sys = { path = "gen_layouts_sys", version = "0.3.0", features = [] }
-bytes = { version = "1.11.1", default-features = false }
 log = "0.4.29"
 heapless = "0.9.2"
 
